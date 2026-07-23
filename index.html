@@ -747,8 +747,10 @@ table.dt tbody tr{transition:background .12s;}
           <div class="fg"><label id="docSignLblC">ผู้จัดการฝ่ายจัดส่งและคลังสินค้า</label><input type="text" id="docSignC"></div>
         </div>
         <div class="btn-row" style="margin-top:12px;">
+          <button class="btn btn-p btn-lg" id="docExcelBtn">💾 บันทึกเข้า Excel (SharePoint)</button>
           <button class="btn btn-o btn-lg" onclick="window.print()">🖨️ พิมพ์ / บันทึกเป็น PDF (A4 แนวนอน)</button>
         </div>
+        <div id="docExcelStatus" style="margin-top:12px;"></div>
       </div>
 
       <div class="paper-scroll"><div id="docPaperHost"></div></div>
@@ -808,12 +810,12 @@ table.dt tbody tr{transition:background .12s;}
       <div class="card">
         <div class="ctit">📗 บันทึกเข้า Excel บน SharePoint <span class="sub">วิธีหลัก · ผ่านไฟล์ที่ซิงค์ OneDrive · ไม่ต้องขอสิทธิ์ IT</span></div>
         <div class="g2">
-          <div class="fg"><label>ชื่อชีตสำหรับ "แผ่น"</label>
-            <input type="text" id="set_excel_sheet_sheet" placeholder="แผ่น">
-            <span class="hint">ข้อมูลโหมดแผ่นบันทึกลงชีตนี้</span></div>
-          <div class="fg"><label>ชื่อชีตสำหรับ "กล่อง"</label>
-            <input type="text" id="set_excel_sheet_box" placeholder="กล่อง">
-            <span class="hint">ข้อมูลโหมดกล่องบันทึกลงชีตนี้ · แยกชีตอัตโนมัติตามโหมด</span></div>
+          <div class="fg"><label>ชีตรับคืน "แผ่น"</label>
+            <input type="text" id="set_excel_sheet_sheet" placeholder="รับคืน-แผ่น">
+            <span class="hint">รายการรับคืนโหมดแผ่นบันทึกลงชีตนี้</span></div>
+          <div class="fg"><label>ชีตรับคืน "กล่อง"</label>
+            <input type="text" id="set_excel_sheet_box" placeholder="รับคืน-กล่อง">
+            <span class="hint">รายการรับคืนโหมดกล่องลงชีตนี้ · จ่ายเงิน/หักเงินลงชีต จ่ายเงิน-แผ่น/กล่อง, หักเงิน-แผ่น/กล่อง อัตโนมัติ</span></div>
           <div class="fg fa"><label>ลิงก์ไฟล์ Excel บน SharePoint (สำหรับกดเปิดดู)</label>
             <input type="url" id="set_excel_url" placeholder="https://yourcompany.sharepoint.com/.../รับคืน.xlsx">
             <span class="hint">วางลิงก์ไฟล์ Excel ไว้กดเปิดดูบนเว็บได้ทันที · ไม่ใช้สำหรับบันทึก (การบันทึกใช้ปุ่มเลือกไฟล์ในเครื่อง)</span></div>
@@ -918,7 +920,7 @@ const DEFAULTS = {
   company:'บริษัท อินเตอร์ไฟเบอร์ คอนเทนเนอร์ จำกัด',
   address:'',
   userSheet:'', userBox:'', boss:'คุณปราณี ทับอุไร',  // ผู้จัดทำเอกสารแยกตามโหมด แผ่น/กล่อง
-  spUrl:'', flowUrl:'', excelSheetSheet:'แผ่น', excelSheetBox:'กล่อง', excelUrl:'', firebaseConfig:'', cloudCollection:'returns', apiKey:'', model:'claude-opus-4-8',
+  spUrl:'', flowUrl:'', excelSheetSheet:'รับคืน-แผ่น', excelSheetBox:'รับคืน-กล่อง', excelUrl:'', firebaseConfig:'', cloudCollection:'returns', apiKey:'', model:'claude-opus-4-8',
   oldDiscount:50, threshold:100,
   sheetRates:{ B:0.0172, C:0.0198, E:0.0114, BC:0.0308 },
   boxRates:{   B:0.042,  C:0.048,  E:0.028,  BC:0.072  },
@@ -936,13 +938,35 @@ const DEFAULTS = {
     {plate:'70-8223',name:'ชนิสรา'},{plate:'70-1172',name:'น้อย'},{plate:'54-5784',name:'สถาพร'},
     {plate:'68-4719',name:'ชมภู'},{plate:'74-3246',name:'สมบูรณ์'},{plate:'70-3874',name:'สถาพร'},
     {plate:'73-3814',name:'สมบูรณ์'},{plate:'54-1391',name:'มลวิภา'},{plate:'71-3398',name:'สรศักดิ์'},
-    {plate:'70-3398',name:'สรศักดิ์'}
+    {plate:'70-3398',name:'สรศักดิ์'},
+    // รถโรงกล่อง + พาเลท/ตู้ทึบ (จาก รายชื่อรถ New.xlsx — เพิ่ม v4.4)
+    {plate:'1ฒห8002',name:'อำพัน'},{plate:'บบ1358',name:'สมเดช'},{plate:'3ฒอ8943',name:'กิตติกร'},
+    {plate:'บจ4527',name:'ไสว'},{plate:'บห5432',name:'ธานินท์'},{plate:'ฒญ3581',name:'ศักดิ์โชติ'},
+    {plate:'3ฒถ8268',name:'สุฑิณัฎฐ์'},{plate:'2ฒถ587',name:'ปิยะ'},{plate:'3ฒศ3013',name:'เอกพันธ์'},
+    {plate:'1ฒล9078',name:'วัชรศร'},{plate:'3ฒณ651',name:'ภูบดี'},{plate:'70-9644',name:'สมนึก'},
+    {plate:'70-7482',name:'ธงชัย'},{plate:'70-8204',name:'ธันยบูรณ์'},{plate:'70-6431',name:'สมทรง'},
+    {plate:'70-8228',name:'สุทัศน์'},{plate:'70-7861',name:'ศรีสุดา'},{plate:'70-9244',name:'ศิริศักดิ์'},
+    {plate:'70-8132',name:'เดือนเพ็ญ'},{plate:'70-9636',name:'กฤษฎา'},{plate:'54-1392',name:'สามารถ'},
+    {plate:'73-1485',name:'บุญทัน'},{plate:'70-3425',name:'ประจักร'},{plate:'70-7859',name:'ธีระ'},
+    {plate:'70-7900',name:'อาดุล'},{plate:'70-9392',name:'สมรักษ์'},{plate:'70-9873',name:'คารมย์'},
+    {plate:'70-7913',name:'สมทรง'},{plate:'82-4475',name:'พี่เสนาะ (เกียรติรัชต์)'},{plate:'71-1471',name:'สนุ๊กเกอร์ (ดวงพร)'},
+    {plate:'71-5788',name:'พี่พิเชษฐ์ (วิชัย)'},{plate:'73-5320',name:'พี่กุ๊กไก่ (ศุภกร)'},{plate:'72-9217',name:'น้ามืด (สุนทร)'},
+    {plate:'70-7903',name:'สงกรานต์'},{plate:'72-1540',name:'บุ๊ค (ทนง)'},{plate:'73-0775',name:'สายัญ (สงกรานต์)'},
+    {plate:'70-7915',name:'สิทธิโชค'},{plate:'73-1291',name:'วุฒิชัย (อภิสิทธิ์)'},{plate:'71-3741',name:'วิจิตร (พิมพิมล)'},
+    {plate:'70-3730',name:'พี่บอย (หนูนา)'},{plate:'71-8278',name:'พี่นัย (อาคม)'},{plate:'67-0817',name:'แซม (วิชยุฒน์)'},
+    {plate:'700-7460',name:'พงศธร (สุบิน)'},{plate:'70-3665',name:'วิชัย'}
   ]
 };
 
 let settings = loadSettings();
 if(settings.company==='บริษัท ___ จำกัด') settings.company='บริษัท อินเตอร์ไฟเบอร์ คอนเทนเนอร์ จำกัด';  // migrate ชื่อบริษัทเดิม
 if(settings.user){ if(!settings.userSheet) settings.userSheet=settings.user; if(!settings.userBox) settings.userBox=settings.user; delete settings.user; }  // migrate ผู้จัดทำเดี่ยว → แยกโหมด
+if(settings.excelSheetSheet==='แผ่น') settings.excelSheetSheet='รับคืน-แผ่น';   // migrate ชื่อชีตเดิม → Backup 6 ชีต (v4.4)
+if(settings.excelSheetBox==='กล่อง') settings.excelSheetBox='รับคืน-กล่อง';
+{ // เติมรถโรงกล่อง/พาเลทที่ยังไม่มีในรายชื่อที่เคยบันทึกไว้ (v4.4)
+  const have=new Set((settings.trucks||[]).map(t=>t.plate));
+  DEFAULTS.trucks.forEach(t=>{ if(!have.has(t.plate)) settings.trucks.push({plate:t.plate,name:t.name}); });
+}
 let rows = [];   // {date,plate,driver,company,product('แผ่น'|'กล่อง'),flute,width,length,height,qty,old,note, _full,_amt,_billed}
 let header = { date:'', bill:'' };
 let files = [];
@@ -1057,10 +1081,30 @@ const DOC_META={
 };
 let docType='pay';
 let docs={ pay:null, ded:null };
+/* ทะเบียน → โรงแผ่น/โรงกล่อง (จาก รายชื่อรถ New.xlsx) ใช้เติมประเภทอัตโนมัติ */
+const TRUCK_PLANT={
+  // โรงแผ่น
+  'ฒม-1921':'แผ่น','ถท-7728':'แผ่น','2ฒห-908':'แผ่น','บต-1949':'แผ่น','บล-7722':'แผ่น','ผบ-1027':'แผ่น',
+  '3ฒฒ-2378':'แผ่น','3ฒพ-7167':'แผ่น','3ฒย-4439':'แผ่น','3ฒร-2317':'แผ่น','ยฉ-7175':'แผ่น','บต-5306':'แผ่น',
+  '99-8066':'แผ่น','70-1172':'แผ่น','68-4719':'แผ่น','54-1391':'แผ่น','70-3874':'แผ่น',
+  '70-0223':'แผ่น','70-8648':'แผ่น','70-1128':'แผ่น','71-6503':'แผ่น','70-0964':'แผ่น','70-1304':'แผ่น',
+  '72-3711':'แผ่น','50-0952':'แผ่น','70-8768':'แผ่น','70-8822':'แผ่น','700-2349':'แผ่น','54-1357':'แผ่น',
+  '70-1878':'แผ่น','72-9554':'แผ่น','71-4141':'แผ่น','71-9074':'แผ่น','70-8223':'แผ่น','54-5784':'แผ่น',
+  '74-3246':'แผ่น','73-3814':'แผ่น','70-3398':'แผ่น','70-9345':'แผ่น',
+  // โรงกล่อง
+  '1ฒห8002':'กล่อง','บบ1358':'กล่อง','3ฒอ8943':'กล่อง','บจ4527':'กล่อง','บห5432':'กล่อง','ฒญ3581':'กล่อง',
+  '3ฒถ8268':'กล่อง','2ฒถ587':'กล่อง','3ฒศ3013':'กล่อง','1ฒล9078':'กล่อง','3ฒณ651':'กล่อง',
+  '70-9644':'กล่อง','70-7482':'กล่อง','70-8204':'กล่อง','70-6431':'กล่อง','70-8228':'กล่อง','70-7861':'กล่อง',
+  '70-9244':'กล่อง','70-8132':'กล่อง','70-9636':'กล่อง','54-1392':'กล่อง','73-1485':'กล่อง','70-3425':'กล่อง',
+  '70-7859':'กล่อง','70-7900':'กล่อง','70-9392':'กล่อง','70-9873':'กล่อง','70-7913':'กล่อง',
+  '82-4475':'กล่อง','71-1471':'กล่อง','71-5788':'กล่อง','73-5320':'กล่อง','72-9217':'กล่อง','70-7903':'กล่อง',
+  '72-1540':'กล่อง','73-0775':'กล่อง','70-7915':'กล่อง','73-1291':'กล่อง','71-3741':'กล่อง','70-3730':'กล่อง',
+  '71-8278':'กล่อง','67-0817':'กล่อง','700-7460':'กล่อง','70-3665':'กล่อง'
+};
 function docBlank(t){ return { period:'', rows:[], signers:DOC_META[t].signers.slice() }; }
 function docNewRow(t){
-  return t==='pay' ? {date:todayYMD(),plate:'',driver:'',company:'',amount:'',toll:'',total:'',note:'',detail:''}
-                   : {date:todayYMD(),so:'',company:'',plate:'',driver:'',qty:'',unit:'',amount:'',reason:'ขาดในมือ'};
+  return t==='pay' ? {date:todayYMD(),plate:'',driver:'',plant:'แผ่น',company:'',amount:'',toll:'',total:'',note:'',detail:''}
+                   : {date:todayYMD(),so:'',company:'',plate:'',driver:'',plant:'แผ่น',qty:'',unit:'',amount:'',reason:'ขาดในมือ'};
 }
 function docLoad(){
   ['pay','ded'].forEach(t=>{
@@ -1090,23 +1134,27 @@ function renderDocEntry(){
   const t=docType, d=docs[t];
   $('#docPlateDl').innerHTML=(settings.trucks||[]).map(x=>`<option value="${esc(x.plate)}">${esc(x.name)}</option>`).join('');
   const inp=(i,f,type,ph,extra)=>`<input data-i="${i}" data-f="${f}" type="${type||'text'}" value="${esc(d.rows[i][f])}" placeholder="${ph||''}" ${extra||''}>`;
+  const plantSel=(i,r)=>`<td><select data-i="${i}" data-f="plant" style="width:100%;padding:5px 4px;font:inherit;border:1px solid #cbd2dc;border-radius:6px;">
+      <option value="แผ่น"${r.plant!=='กล่อง'?' selected':''}>แผ่น</option>
+      <option value="กล่อง"${r.plant==='กล่อง'?' selected':''}>กล่อง</option></select></td>`;
   let head,body;
   if(t==='pay'){
-    head='<tr><th style="width:36px;">#</th><th style="width:118px;">ว/ด/ป</th><th style="width:110px;">ทะเบียน</th><th style="width:110px;">ชื่อ</th><th>บริษัท</th><th style="width:92px;">จำนวนเงิน</th><th style="width:92px;">ค่าทางด่วน</th><th style="width:92px;">ยอดรวม</th><th>หมายเหตุ</th><th style="width:40px;"></th></tr>';
+    head='<tr><th style="width:36px;">#</th><th style="width:118px;">ว/ด/ป</th><th style="width:110px;">ทะเบียน</th><th style="width:110px;">ชื่อ</th><th style="width:82px;">ประเภท</th><th>บริษัท</th><th style="width:92px;">จำนวนเงิน</th><th style="width:92px;">ค่าทางด่วน</th><th style="width:92px;">ยอดรวม</th><th>หมายเหตุ</th><th style="width:40px;"></th></tr>';
     body=d.rows.map((r,i)=>`<tr>
       <td style="text-align:center;color:var(--mu);">${i+1}</td>
       <td>${inp(i,'date','date')}</td>
       <td>${inp(i,'plate','text','ทะเบียน','list="docPlateDl"')}</td>
       <td>${inp(i,'driver','text','อัตโนมัติ')}</td>
+      ${plantSel(i,r)}
       <td>${inp(i,'company','text','บริษัทลูกค้า')}</td>
       <td>${inp(i,'amount','number','0','step="any" min="0"')}</td>
       <td>${inp(i,'toll','number','0','step="any" min="0"')}</td>
       <td>${inp(i,'total','number','อัตโนมัติ','step="any" min="0"')}</td>
       <td>${inp(i,'note','text','')}</td>
       <td><button class="row-x" data-rm="${i}">🗑</button></td></tr>
-      <tr><td></td><td colspan="9">${inp(i,'detail','text','คำอธิบายเพิ่มเติมใต้รายการ (ถ้ามี) เช่น คนรถถึงบริษัทลูกค้าเวลา ... รอ ... ชั่วโมง')}</td></tr>`).join('');
+      <tr><td></td><td colspan="10">${inp(i,'detail','text','คำอธิบายเพิ่มเติมใต้รายการ (ถ้ามี) เช่น คนรถถึงบริษัทลูกค้าเวลา ... รอ ... ชั่วโมง')}</td></tr>`).join('');
   }else{
-    head='<tr><th style="width:36px;">#</th><th style="width:118px;">วดป</th><th style="width:110px;">SO</th><th>บริษัท</th><th style="width:105px;">ทะเบียนรถ</th><th style="width:105px;">ชื่อคนรถ</th><th style="width:86px;">จำนวนสินค้า</th><th style="width:86px;">หน่วยละ</th><th style="width:92px;">จำนวนเงิน</th><th style="width:110px;">สาเหตุ</th><th style="width:40px;"></th></tr>';
+    head='<tr><th style="width:36px;">#</th><th style="width:118px;">วดป</th><th style="width:110px;">SO</th><th>บริษัท</th><th style="width:105px;">ทะเบียนรถ</th><th style="width:105px;">ชื่อคนรถ</th><th style="width:82px;">ประเภท</th><th style="width:86px;">จำนวนสินค้า</th><th style="width:86px;">หน่วยละ</th><th style="width:92px;">จำนวนเงิน</th><th style="width:110px;">สาเหตุ</th><th style="width:40px;"></th></tr>';
     body=d.rows.map((r,i)=>`<tr>
       <td style="text-align:center;color:var(--mu);">${i+1}</td>
       <td>${inp(i,'date','date')}</td>
@@ -1114,18 +1162,22 @@ function renderDocEntry(){
       <td>${inp(i,'company','text','บริษัทลูกค้า')}</td>
       <td>${inp(i,'plate','text','ทะเบียน','list="docPlateDl"')}</td>
       <td>${inp(i,'driver','text','อัตโนมัติ')}</td>
+      ${plantSel(i,r)}
       <td>${inp(i,'qty','number','0','step="any" min="0"')}</td>
       <td>${inp(i,'unit','number','0','step="any" min="0"')}</td>
       <td>${inp(i,'amount','number','อัตโนมัติ','step="any" min="0"')}</td>
       <td>${inp(i,'reason','text','เช่น ขาดในมือ')}</td>
       <td><button class="row-x" data-rm="${i}">🗑</button></td></tr>`).join('');
   }
-  if(!d.rows.length) body=`<tr><td colspan="11" style="text-align:center;color:var(--mu);padding:16px;">ยังไม่มีรายการ — กด "➕ เพิ่มแถว"</td></tr>`;
+  if(!d.rows.length) body=`<tr><td colspan="12" style="text-align:center;color:var(--mu);padding:16px;">ยังไม่มีรายการ — กด "➕ เพิ่มแถว"</td></tr>`;
   $('#docEntryWrap').innerHTML=`<table class="dt" style="min-width:980px;"><thead>${head}</thead><tbody>${body}</tbody></table>`;
-  $('#docEntryWrap').querySelectorAll('input').forEach(el=>el.addEventListener('input',e=>{
+  $('#docEntryWrap').querySelectorAll('input,select').forEach(el=>el.addEventListener('input',e=>{
     const i=+e.target.dataset.i, f=e.target.dataset.f, r=d.rows[i]; if(!r)return;
     r[f]=e.target.value;
-    if(f==='plate'){ const nm=lookupTruckName(r.plate); if(nm){ r.driver=nm; const dv=$('#docEntryWrap').querySelector(`input[data-i="${i}"][data-f="driver"]`); if(dv)dv.value=nm; } }
+    if(f==='plate'){
+      const nm=lookupTruckName(r.plate); if(nm){ r.driver=nm; const dv=$('#docEntryWrap').querySelector(`input[data-i="${i}"][data-f="driver"]`); if(dv)dv.value=nm; }
+      const pl=TRUCK_PLANT[String(r.plate).trim()]; if(pl){ r.plant=pl; const pv=$('#docEntryWrap').querySelector(`select[data-i="${i}"][data-f="plant"]`); if(pv)pv.value=pl; }
+    }
     if(t==='pay' && (f==='amount'||f==='toll')){ r.total=String(docCalcRow(t,r)); const tv=$('#docEntryWrap').querySelector(`input[data-i="${i}"][data-f="total"]`); if(tv)tv.value=r.total; }
     if(t==='ded' && (f==='qty'||f==='unit')){ r.amount=String(docCalcRow(t,r)); const av=$('#docEntryWrap').querySelector(`input[data-i="${i}"][data-f="amount"]`); if(av)av.value=r.amount; }
     docSave(); renderDocPaper();
@@ -1189,6 +1241,48 @@ function renderDocs(){
 { const p=$('#docPeriod'); if(p)p.addEventListener('input',()=>{ docs[docType].period=p.value; docSave(); renderDocPaper(); }); }
 { const b=$('#docPeriodAuto'); if(b)b.addEventListener('click',()=>{ docs[docType].period=docHalfMonth(); $('#docPeriod').value=docs[docType].period; docSave(); renderDocPaper(); }); }
 ['A','B','C'].forEach((k,i)=>{ const e=$('#docSign'+k); if(e)e.addEventListener('input',()=>{ docs[docType].signers[i]=e.value; docSave(); renderDocPaper(); }); });
+/* ---------- บันทึกจ่ายเงิน/หักเงินลงไฟล์ Excel เดียวกับรับคืน (แยกชีตตามประเภท แผ่น/กล่อง) ---------- */
+const PAY_EXCEL_HEAD=['วันที่','ทะเบียน','ชื่อ','บริษัท','จำนวนเงิน','ค่าทางด่วน','ยอดรวม','หมายเหตุ','คำอธิบายเพิ่มเติม','ช่วงเอกสาร','บันทึกเมื่อ'];
+const DED_EXCEL_HEAD=['วันที่','SO','บริษัท','ทะเบียนรถ','ชื่อคนรถ','จำนวนสินค้า','หน่วยละ','จำนวนเงิน','สาเหตุ','ช่วงเอกสาร','บันทึกเมื่อ'];
+function docSheetName(t,plant){ return (t==='pay'?'จ่ายเงิน':'หักเงิน')+'-'+(plant==='กล่อง'?'กล่อง':'แผ่น'); }
+function docRowsAoa(t,rows){
+  const stamp=new Date().toLocaleString('th-TH'), per=docs[t].period||'';
+  return rows.map(r=> t==='pay'
+    ? [r.date,r.plate,r.driver,r.company,Number(r.amount)||0,Number(r.toll)||0,(r.total!==''?Number(r.total)||0:docCalcRow(t,r)),r.note,r.detail,per,stamp]
+    : [r.date,r.so,r.company,r.plate,r.driver,Number(r.qty)||0,Number(r.unit)||0,(r.amount!==''?Number(r.amount)||0:docCalcRow(t,r)),r.reason,per,stamp]);
+}
+async function saveDocToExcel(){
+  const t=docType, d=docs[t], st=$('#docExcelStatus'), head=(t==='pay'?PAY_EXCEL_HEAD:DED_EXCEL_HEAD);
+  if(typeof XLSX==='undefined'){ st.innerHTML=`<div class="alert warn">⚠️ โหลดไลบรารี Excel ไม่สำเร็จ — ตรวจอินเทอร์เน็ตแล้วลองใหม่</div>`; return; }
+  if(!d.rows.length){ toast('ไม่มีรายการให้บันทึก','wa'); return; }
+  const byPlant={}; d.rows.forEach(r=>{ const k=(r.plant==='กล่อง')?'กล่อง':'แผ่น'; (byPlant[k]=byPlant[k]||[]).push(r); });
+  if(!fsaSupported()){   // เบราว์เซอร์เขียนไฟล์ตรงไม่ได้ → ดาวน์โหลดแทน
+    const wb=XLSX.utils.book_new();
+    Object.keys(byPlant).forEach(pl=>{ XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([head,...docRowsAoa(t,byPlant[pl])]), docSheetName(t,pl)); });
+    XLSX.writeFile(wb,`${DOC_META[t].title}_${d.period||todayYMD()}.xlsx`.replace(/[\\/:*?"<>|]/g,'_'));
+    st.innerHTML=`<div class="alert warn">⚠️ เบราว์เซอร์นี้เขียนไฟล์ตรงไม่ได้ — ดาวน์โหลดเป็น .xlsx ให้แทน (ใช้ Chrome/Edge เพื่อบันทึกตรง)</div>`; return;
+  }
+  if(!excelHandle){ await pickExcel(); if(!excelHandle)return; }
+  if(!(await ensurePerm(excelHandle,'readwrite'))){ st.innerHTML=`<div class="alert warn">⚠️ ไม่ได้รับสิทธิ์เขียนไฟล์ — เชื่อมไฟล์ใหม่ที่ ⚙️ ตั้งค่า แล้วอนุญาตอีกครั้ง</div>`; return; }
+  const btn=$('#docExcelBtn'); btn.disabled=true;
+  st.innerHTML=`<div class="alert info"><span class="spin" style="border-color:rgba(30,64,175,.3);border-top-color:#1e40af;"></span> กำลังเพิ่มข้อมูลลงไฟล์ Excel...</div>`;
+  try{
+    const file=await excelHandle.getFile(), buf=await file.arrayBuffer();
+    let wb; try{ wb = buf.byteLength ? XLSX.read(buf,{type:'array'}) : XLSX.utils.book_new(); }catch(e){ wb = XLSX.utils.book_new(); }
+    const written=[];
+    Object.keys(byPlant).forEach(pl=>{ const sn=docSheetName(t,pl); appendToSheet(wb,sn,docRowsAoa(t,byPlant[pl]),head); written.push(`"${sn}" (${byPlant[pl].length})`); });
+    const out=XLSX.write(wb,{type:'array',bookType:'xlsx'});
+    const w=await excelHandle.createWritable(); await w.write(out); await w.close();
+    st.innerHTML=`<div class="alert ok">✅ บันทึกเข้า <b>${esc(excelHandle.name)}</b> สำเร็จ — ${d.rows.length} แถว · ชีต ${written.map(esc).join(' · ')}<br><span class="muted">OneDrive จะซิงค์ขึ้น SharePoint ให้อัตโนมัติ · ⚠️ กดซ้ำจะเพิ่มแถวซ้ำ</span></div>`;
+    toast('บันทึกเข้า Excel แล้ว ('+d.rows.length+' รายการ)');
+  }catch(err){
+    if(err&&err.name==='NoModificationAllowedError'){ st.innerHTML=`<div class="alert warn">⚠️ ไฟล์กำลังถูกเปิดอยู่ใน Excel — ปิดไฟล์ก่อนแล้วลองใหม่</div>`; }
+    else{ st.innerHTML=`<div class="alert warn">⚠️ บันทึกไม่สำเร็จ: ${esc(err.message||err.name)}</div>`; }
+    toast('บันทึกเข้า Excel ไม่สำเร็จ','er');
+  }finally{ btn.disabled=false; }
+}
+{ const b=$('#docExcelBtn'); if(b)b.addEventListener('click',saveDocToExcel); }
+
 function renderDocsSummary(){   // การ์ดสรุปจ่ายเงิน/หักเงินในหน้า "สรุปข้อมูล"
   const g=$('#docsSumGrid'); if(!g)return;
   if(!docs.pay) docLoad();
@@ -1202,9 +1296,14 @@ function renderDocsSummary(){   // การ์ดสรุปจ่ายเง
 }
 
 /* ---------- VERSION / CHANGELOG (ประวัติการแก้ไข) ---------- */
-const APP_VERSION = 'v4.3';
+const APP_VERSION = 'v4.4';
 const APP_VERSION_DATE = 'อัปเดต 22 ก.ค. 2026';
 const CHANGELOG = [
+  { v:'v4.4', date:'22 ก.ค. 2026', items:[
+      'ไฟล์ Backup Excel ใหม่ 6 ชีต: รับคืน-แผ่น · รับคืน-กล่อง · จ่ายเงิน-แผ่น · จ่ายเงิน-กล่อง · หักเงิน-แผ่น · หักเงิน-กล่อง',
+      'หน้าจ่ายเงิน/หักเงิน เพิ่มคอลัมน์ "ประเภท" (แผ่น/กล่อง) — เติมอัตโนมัติจากทะเบียนรถโรงแผ่น/โรงกล่อง แก้เองได้',
+      'ปุ่ม "บันทึกเข้า Excel (SharePoint)" ในหน้าจ่ายเงิน/หักเงิน — ลงชีตของตัวเองแยกแผ่น/กล่อง ไฟล์เดียวกับรับคืน',
+      'เก็บช่วงเอกสารและเวลาบันทึกลงทุกแถวใน Excel' ] },
   { v:'v4.3', date:'22 ก.ค. 2026', items:[
       'นำการเชื่อมต่อ Microsoft Entra / Graph API ออก (องค์กรไม่อนุญาต App registration)',
       'บันทึกลง Excel บน SharePoint ใช้วิธีไฟล์ที่ซิงค์ด้วย OneDrive เป็นวิธีหลัก — ไม่ต้องขอสิทธิ์ IT',
@@ -1848,7 +1947,7 @@ function updateExcelLink(){
   const wrap=$('#excelLink'),nm=$('#excelName'),sub=$('#excelSub'),unb=$('#unlinkExcelBtn');
   if(!wrap)return;
   if(excelHandle){ wrap.classList.add('linked'); nm.textContent='📗 '+excelHandle.name;
-    sub.textContent='เชื่อมไฟล์แล้ว · แยกชีต "'+(settings.excelSheetSheet||'แผ่น')+'" / "'+(settings.excelSheetBox||'กล่อง')+'" ตามโหมด · กด "บันทึกเข้า Excel"';
+    sub.textContent='เชื่อมไฟล์แล้ว · รับคืนลงชีต "'+(settings.excelSheetSheet||'รับคืน-แผ่น')+'" / "'+(settings.excelSheetBox||'รับคืน-กล่อง')+'" · จ่ายเงิน/หักเงินลงชีตของตัวเอง (แยกแผ่น/กล่อง)';
     if(unb)unb.style.display=''; }
   else { wrap.classList.remove('linked'); nm.textContent='ยังไม่ได้เชื่อมไฟล์ Excel';
     sub.textContent='เลือกไฟล์ Excel ในโฟลเดอร์ SharePoint ที่ซิงค์ไว้ในเครื่อง (ครั้งเดียว · จำไว้ให้)';
@@ -1873,18 +1972,19 @@ function recsToAoa(recs){
   return recs.map(r=>[r.date,r.plate,r.driver,r.company,r.product,r.flute,r.width,r.length,r.height,r.quantity,r.oldGoods,r.fullPrice,r.returnAmount,r.status,r.note,stamp]);
 }
 function excelSheetFor(product){   // ชีตแยกตามชนิดสินค้า: แผ่น / กล่อง
-  const n = (product==='กล่อง') ? (settings.excelSheetBox||'กล่อง') : (settings.excelSheetSheet||'แผ่น');
+  const n = (product==='กล่อง') ? (settings.excelSheetBox||'รับคืน-กล่อง') : (settings.excelSheetSheet||'รับคืน-แผ่น');
   return String(n).slice(0,31);
 }
-function appendToSheet(wb, sheetName, aoa){   // เพิ่มแถวต่อท้ายชีต (สร้างพร้อมหัวคอลัมน์ถ้ายังไม่มี)
+function appendToSheet(wb, sheetName, aoa, head){   // เพิ่มแถวต่อท้ายชีต (สร้างพร้อมหัวคอลัมน์ถ้ายังไม่มี)
+  head = head || EXCEL_HEAD;
   let ws=wb.Sheets[sheetName];
   if(!ws){
-    ws=XLSX.utils.aoa_to_sheet([EXCEL_HEAD,...aoa]);
+    ws=XLSX.utils.aoa_to_sheet([head,...aoa]);
     if(!wb.SheetNames.includes(sheetName)) wb.SheetNames.push(sheetName);
     wb.Sheets[sheetName]=ws;
   } else {
     const hasData = !!ws['!ref'] && XLSX.utils.decode_range(ws['!ref']).e.r>0;
-    if(!hasData) XLSX.utils.sheet_add_aoa(ws,[EXCEL_HEAD],{origin:'A1'});
+    if(!hasData) XLSX.utils.sheet_add_aoa(ws,[head],{origin:'A1'});
     XLSX.utils.sheet_add_aoa(ws,aoa,{origin:-1});
   }
 }
@@ -2132,7 +2232,7 @@ function normalizeDate(s){
 function loadSettingsUI(){
   $('#set_co').value=settings.company||'';$('#set_addr').value=settings.address||'';
   $('#set_user_sheet').value=settings.userSheet||'';$('#set_user_box').value=settings.userBox||'';$('#set_boss').value=settings.boss||'';
-  $('#set_spurl').value=settings.spUrl||'';$('#set_flow').value=settings.flowUrl||'';$('#set_excel_sheet_sheet').value=settings.excelSheetSheet||'แผ่น';$('#set_excel_sheet_box').value=settings.excelSheetBox||'กล่อง';$('#set_excel_url').value=settings.excelUrl||'';$('#set_fb').value=settings.firebaseConfig||'';$('#set_fb_coll').value=settings.cloudCollection||'returns';
+  $('#set_spurl').value=settings.spUrl||'';$('#set_flow').value=settings.flowUrl||'';$('#set_excel_sheet_sheet').value=settings.excelSheetSheet||'รับคืน-แผ่น';$('#set_excel_sheet_box').value=settings.excelSheetBox||'รับคืน-กล่อง';$('#set_excel_url').value=settings.excelUrl||'';$('#set_fb').value=settings.firebaseConfig||'';$('#set_fb_coll').value=settings.cloudCollection||'returns';
   $('#set_apikey').value=settings.apiKey||'';$('#set_model').value=settings.model||'claude-opus-4-8';
   $('#set_disc').value=settings.oldDiscount;$('#set_thresh').value=settings.threshold;
   FLUTES.forEach(f=>{$('#r_sheet_'+f).value=settings.sheetRates[f];$('#r_box_'+f).value=settings.boxRates[f];});
@@ -2160,8 +2260,8 @@ $('#saveSettings').addEventListener('click',()=>{
   settings.company=$('#set_co').value;settings.address=$('#set_addr').value;
   settings.userSheet=$('#set_user_sheet').value;settings.userBox=$('#set_user_box').value;settings.boss=$('#set_boss').value;
   settings.spUrl=$('#set_spurl').value;settings.flowUrl=$('#set_flow').value;
-  settings.excelSheetSheet=($('#set_excel_sheet_sheet').value||'').trim()||'แผ่น';
-  settings.excelSheetBox=($('#set_excel_sheet_box').value||'').trim()||'กล่อง';
+  settings.excelSheetSheet=($('#set_excel_sheet_sheet').value||'').trim()||'รับคืน-แผ่น';
+  settings.excelSheetBox=($('#set_excel_sheet_box').value||'').trim()||'รับคืน-กล่อง';
   settings.excelUrl=($('#set_excel_url').value||'').trim();
   settings.firebaseConfig=($('#set_fb').value||'').trim();
   settings.cloudCollection=($('#set_fb_coll').value||'').trim()||'returns';
