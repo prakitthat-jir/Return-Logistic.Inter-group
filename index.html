@@ -582,7 +582,7 @@ table.dt tbody tr{transition:background .12s;}
       </div>
 
       <div class="card">
-        <div class="ctit">📊 สรุปรวม</div>
+        <div class="ctit">📊 สรุปรวม <span class="sub"><button class="btn btn-g btn-sm" id="plateSortBtn" type="button">⇅ เรียงทะเบียน</button></span></div>
         <div class="tot-bar" style="margin-top:0;">
           <div class="tot-box"><div class="l">รายการ (ในช่วง)</div><div class="v" id="t_rows">0</div></div>
           <div class="tot-box"><div class="l">ทะเบียนที่คิดเงิน</div><div class="v" id="t_plates">0</div></div>
@@ -995,6 +995,7 @@ const ymd=d=>`${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
 const parseYMD=s=>{const m=String(s||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?new Date(+m[1],+m[2]-1,+m[3]):null;};
 const todayYMD=()=>ymd(new Date());
 const fmtDShort=d=>`${d.getDate()} ${THMON[d.getMonth()]}`;
+const fmtThai=s=>{ const d=parseYMD(s); return d?`${d.getDate()} ${THMON[d.getMonth()]} ${String(d.getFullYear()+543).slice(-2)}`:(s||'-'); };  // 22 ก.ค. 69
 function weekStartThu(d){ const x=new Date(d.getFullYear(),d.getMonth(),d.getDate()); x.setDate(x.getDate()-((x.getDay()-4+7)%7)); return x; }  // วันพฤหัสที่เริ่มสัปดาห์
 function weekOf(dateStr){
   const d=parseYMD(dateStr)||new Date();
@@ -1010,12 +1011,13 @@ function renderWeekBanner(){
   const el=$('#weekBanner'); if(!el)return;
   if(!dateFrom && !dateTo){
     const w=weekOf(todayYMD());
-    el.innerHTML=`<span class="wk-num">ทุกสัปดาห์</span><span class="wk-range">แสดงทุกวัน · สัปดาห์นี้คือ Week ${w.num} (${fmtDShort(w.startD)} – ${fmtDShort(w.endD)} ${w.endD.getFullYear()})</span>`;
+    el.innerHTML=`<span class="wk-num">📅 แสดงทุกวัน</span><span class="wk-range">สัปดาห์ปัจจุบันคือ สัปดาห์ที่ ${w.num} · ${fmtThai(w.start)} – ${fmtThai(w.end)}</span>`;
     return;
   }
   const w1=weekOf(dateFrom||dateTo), w2=weekOf(dateTo||dateFrom);
-  const label = (w1.num===w2.num) ? `Week ${w1.num}` : `Week ${w1.num}–${w2.num}`;
-  el.innerHTML=`<span class="wk-num">${label}</span><span class="wk-range">${fmtDate(dateFrom||dateTo)} – ${fmtDate(dateTo||dateFrom)}</span>`;
+  const label = (w1.num===w2.num) ? `สัปดาห์ที่ ${w1.num}` : `สัปดาห์ที่ ${w1.num}–${w2.num}`;
+  const oneWeek = (w1.num===w2.num && dateFrom===w1.start && dateTo===w1.end);
+  el.innerHTML=`<span class="wk-num">${label}</span><span class="wk-range">${fmtThai(dateFrom||dateTo)} – ${fmtThai(dateTo||dateFrom)}${oneWeek?' (พฤหัส – พุธ)':''}</span>`;
 }
 function inRange(r){
   if(!dateFrom && !dateTo) return true;
@@ -1296,9 +1298,14 @@ function renderDocsSummary(){   // การ์ดสรุปจ่ายเง
 }
 
 /* ---------- VERSION / CHANGELOG (ประวัติการแก้ไข) ---------- */
-const APP_VERSION = 'v4.4';
-const APP_VERSION_DATE = 'อัปเดต 22 ก.ค. 2026';
+const APP_VERSION = 'v4.5';
+const APP_VERSION_DATE = 'อัปเดต 23 ก.ค. 2026';
 const CHANGELOG = [
+  { v:'v4.5', date:'23 ก.ค. 2026', items:[
+      'สรุปรวมรายทะเบียน: เอารายละเอียดคิดเงิน/ไม่คิดออก เหลือ ทะเบียน · จำนวนรายการ · ยอดเงิน',
+      'เพิ่มปุ่ม "⇅ เรียงทะเบียน" ในสรุปรวม (กดสลับ ก→ฮ / ฮ→ก)',
+      'วันที่แสดงแบบไทยอ่านง่าย เช่น "22 ก.ค. 69" ทั้งแบนเนอร์สัปดาห์และตัวกรอง (สัปดาห์ที่ X แทน Week X)',
+      'ลอน เลือก "-" ได้ (ไม่คิดราคา) และ กว้าง/ยาว/สูง/จำนวน พิมพ์ "-" ได้ — ในเอกสารแสดงเป็น "-"' ] },
   { v:'v4.4', date:'22 ก.ค. 2026', items:[
       'ไฟล์ Backup Excel ใหม่ 6 ชีต: รับคืน-แผ่น · รับคืน-กล่อง · จ่ายเงิน-แผ่น · จ่ายเงิน-กล่อง · หักเงิน-แผ่น · หักเงิน-กล่อง',
       'หน้าจ่ายเงิน/หักเงิน เพิ่มคอลัมน์ "ประเภท" (แผ่น/กล่อง) — เติมอัตโนมัติจากทะเบียนรถโรงแผ่น/โรงกล่อง แก้เองได้',
@@ -1432,7 +1439,7 @@ function rowHtml(r,i,isBox,n){
     <td><input type="date" data-f="date" value="${esc(r.date)}"></td>
     <td><input data-f="plate" value="${esc(r.plate)}" placeholder="ทะเบียน"></td>
     <td><input data-f="company" value="${esc(r.company)}" placeholder="บริษัท"></td>
-    <td><select data-f="flute">${selOpts(FLUTES,r.flute)}</select></td>
+    <td><select data-f="flute">${selOpts(['-'].concat(FLUTES),r.flute||'-')}</select></td>
     <td><input data-f="width" class="ta-r" value="${r.width??''}" placeholder="0"></td>
     <td><input data-f="length" class="ta-r" value="${r.length??''}" placeholder="0"></td>
     ${isBox?`<td><input data-f="height" class="ta-r" value="${r.height??''}" placeholder="0"></td>`:''}
@@ -1452,7 +1459,7 @@ function bindBody(tb){
     el.addEventListener(evt,e=>{
       const i=+e.target.closest('tr').dataset.i;
       if(f==='old') rows[i].old=e.target.checked;
-      else if(['width','length','height','qty'].includes(f)) rows[i][f]= e.target.value===''?'':(parseFloat(e.target.value)||0);
+      else if(['width','length','height','qty'].includes(f)){ const v=e.target.value.trim(); rows[i][f]= (v===''||v==='-')?v:(parseFloat(v)||0); }   // "-" = ไม่ระบุ (คิดเป็น 0)
       else rows[i][f]=e.target.value;
       if(['old','flute','date'].includes(f)){ renderData(); } else { refreshComputed(); }
       saveDraft();
@@ -1521,7 +1528,7 @@ function filterInfo(){
   const el=$('#filterInfo'); if(!el)return;
   if(!dateFrom && !dateTo){ el.textContent='แสดงทุกวัน (ยังไม่ได้กรองช่วงวันที่)'; return; }
   const shown=rows.filter(inRange).length, hidden=rows.length-shown;
-  el.innerHTML=`กรอง: <b>${dateFrom?fmtDate(dateFrom):'…'} ถึง ${dateTo?fmtDate(dateTo):'…'}</b> · แสดง ${shown} รายการ · ซ่อนนอกช่วง ${hidden} รายการ`;
+  el.innerHTML=`กรอง: <b>${dateFrom?fmtThai(dateFrom):'…'} ถึง ${dateTo?fmtThai(dateTo):'…'}</b> · แสดง ${shown} รายการ · ซ่อนนอกช่วง ${hidden} รายการ`;
 }
 function statusBadge(r){
   if(!r.plate||!r.plate.trim()) return r._billed?'<span class="badge ok">คิดเงิน</span>':'<span class="badge warn">ไม่คิด · ใส่ทะเบียน</span>';
@@ -1542,17 +1549,23 @@ function refreshComputed(){
   $('#t_amount').textContent=fmt(billedRows.reduce((s,r)=>s+r._amt,0));
   renderPlateSummary(plates);
 }
+let plateSortDir=0;   // 0=ตามลำดับกรอก · 1=ทะเบียน ก→ฮ · -1=ทะเบียน ฮ→ก
 function renderPlateSummary(plates){
-  const th=Number(settings.threshold)||0, entries=Object.entries(plates), box=$('#plateSummary');
+  let entries=Object.entries(plates); const box=$('#plateSummary');
   if(!entries.length){box.innerHTML='<div class="muted" style="padding:6px;">ยังไม่มีข้อมูล</div>';return;}
+  if(plateSortDir!==0) entries=entries.slice().sort((a,b)=>a[0].localeCompare(b[0],'th')*plateSortDir);
   box.innerHTML=entries.map(([k,g])=>`
-    <div class="plate-row ${g.bill?'bill':'no'}">
+    <div class="plate-row">
       <span class="pl">🚚 ${esc(k)}</span>
-      <span class="meta">${g.rows.length} รายการ · ราคาเต็มรวม ${fmt(g.rows.reduce((s,r)=>s+r._full,0))} บาท</span>
-      <span class="meta">${g.bill?'✅ ถึงเกณฑ์ — คิดเงิน':'⚠️ ต่ำกว่า '+fmt(th)+' — ไม่คิด'}</span>
+      <span class="meta">${g.rows.length} รายการ</span>
       <span class="amt">${fmt(g.total)} ฿</span>
     </div>`).join('');
 }
+{ const b=$('#plateSortBtn'); if(b)b.addEventListener('click',()=>{
+    plateSortDir = plateSortDir===0 ? 1 : (plateSortDir===1 ? -1 : 1);
+    b.textContent = '⇅ เรียงทะเบียน '+(plateSortDir===1?'▲':'▼');
+    refreshComputed();
+  }); }
 function newRow(product){ return {date:(dateFrom||header.date||''),plate:'',driver:'',company:'',product:product||'แผ่น',flute:'C',width:'',length:'',height:'',qty:1,old:false,note:''}; }
 $('#addSheet').addEventListener('click',()=>{rows.push(newRow('แผ่น'));renderData();saveDraft();const t=$('#bodySheet tr:last-child input[data-f="plate"]');if(t)t.focus();});
 $('#addBox').addEventListener('click',()=>{rows.push(newRow('กล่อง'));renderData();saveDraft();const t=$('#bodyBox tr:last-child input[data-f="plate"]');if(t)t.focus();});
@@ -1580,7 +1593,7 @@ function sheetTable(list){
       <td>${esc(r.company)||'-'}</td>
       <td class="r">${esc(r.width||'-')}</td>
       <td class="r">${esc(r.length||'-')}</td>
-      <td class="c">${esc(r.flute)}</td>
+      <td class="c">${esc(r.flute)||'-'}</td>
       <td class="r">${(Number(r.qty)||0).toLocaleString('th-TH')}</td>
       <td class="c mk">${markFull(r)}</td>
       <td class="c mk">${markHalf(r)}</td>
@@ -1608,7 +1621,7 @@ function boxTable(list){
       <td class="r">${esc(r.width||'-')}</td>
       <td class="r">${esc(r.length||'-')}</td>
       <td class="r">${esc(r.height||'-')}</td>
-      <td class="c">${esc(r.flute)}</td>
+      <td class="c">${esc(r.flute)||'-'}</td>
       <td class="r">${(Number(r.qty)||0).toLocaleString('th-TH')}</td>
       <td class="c mk">${markFull(r)}</td>
       <td class="c mk">${markHalf(r)}</td>
@@ -1687,7 +1700,7 @@ function renderPaper(){
     if(!dateFrom && !dateTo){ di.textContent='พิมพ์ทุกวัน (ยังไม่ได้เลือกช่วง)'; }
     else{
       const inModeRange=rows.filter(r=>r.product===m && inRange(r)).length;
-      di.innerHTML=`เลือก: <b>${dateFrom?fmtDate(dateFrom):'…'} ถึง ${dateTo?fmtDate(dateTo):'…'}</b> · ${inModeRange} รายการในช่วง`;
+      di.innerHTML=`เลือก: <b>${dateFrom?fmtThai(dateFrom):'…'} ถึง ${dateTo?fmtThai(dateTo):'…'}</b> · ${inModeRange} รายการในช่วง`;
     }
   }
   const billable=rows.filter(r=>r._billed);  // compute() คิดเงินเฉพาะสินค้าของโหมดที่เลือก
